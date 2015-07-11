@@ -28,7 +28,7 @@ gulp.task('unitTest', function () {
   require('coffee-script/register')
   gulp.src(paths.tests, {cwd: __dirname})
     .pipe(plugins.plumber(plumberConf))
-    .pipe(plugins.mocha({ reporter: 'list' }));
+    .pipe(plugins.mocha({ reporter: 'spec' }));
 });
 
 gulp.task('watch', ['test'], function () {
