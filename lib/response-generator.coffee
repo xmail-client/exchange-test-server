@@ -6,7 +6,7 @@ NS_M = NS.NS_MESSAGES
 
 class ResponseGenerator
   build: (bodyCallback) ->
-    @builder = new builder
+    @builder = new Builder
     @builder.defineNS NS.NAMESPACES
     @builder.rootNS NS.NS_SOAP, 'Envelope', (builder) ->
       builder.nodeNS NS.NS_SOAP, 'Body', bodyCallback
