@@ -2,6 +2,7 @@ Q = require 'q'
 {NAMESPACES} = require './ews-ns'
 libxml = require 'libxmljs'
 Folder = require './folder'
+FolderChange = require './folder-change'
 Response = require './response-generator'
 
 module.exports =
@@ -56,8 +57,12 @@ class RequestDOMParser
     parentNode = createFolderNode.get('m:ParentFolderId', NAMESPACES)
     foldersNode = createFolderNode.get('m:Folders', NAMESPACES)
     newFolders = null
-    @parseFolders(foldersNode).then (folders) =>
+    @parseFolders(foldersNode).then (folders) ->
       newFolders = folders
+      changes = {}
+      changes[folder.id] = 'create' for folder in folders
+      new FolderChange(changes: changes).save()
+    .then =>
       @parseParentFolderId(parentNode)
     .then (parentFolder) ->
       folder.set('parent', parentFolder) for folder in newFolders

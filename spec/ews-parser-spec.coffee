@@ -53,5 +53,10 @@ describe 'EWSParser', ->
       msgNode = resDoc.get(path, NS.NAMESPACES)
       folderIdNode = msgNode.get('m:Folders/t:Folder/t:FolderId', NS.NAMESPACES)
       folderIdNode.attr('Id').value().should.equal '3'
+    .then ->
+      FolderChange = require '../lib/folder-change'
+      FolderChange.fetchAll()
+    .then (collection) ->
+      collection.length.should.equal 1
       done()
     .catch done
