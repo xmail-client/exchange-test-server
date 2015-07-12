@@ -12,13 +12,19 @@ class ResponseGenerator
       builder.nodeNS NS.NS_SOAP, 'Body', bodyCallback
 
   buildAction: (action, resMsgCallback) ->
-    @build (builder) ->
-      builder.nodeNS NS_M, "#{action}Response", (builder) ->
-        builder.nodeNS NS_M, 'ResponseMessages', (builder) ->
-          builder.nodeNS NS_M, "#{action}ResponseMessage",
-            {ResponseClass: 'Success'}, (builder) ->
-              builder.nodeNS NS_M, 'ResponseCode', 'NoError'
-              resMsgCallback(builder)
+    @build (builder) => @buildResponse(builder, action, resMsgCallback)
+
+  buildActions: (action, resMsgCallbacks) ->
+    @build (builder) =>
+      @buildResponse(builder, action, callback) for callback in resMsgCallbacks
+
+  buildResponse: (builder, action, resMsgCallback) ->
+    builder.nodeNS NS_M, "#{action}Response", (builder) ->
+      builder.nodeNS NS_M, 'ResponseMessages', (builder) ->
+        builder.nodeNS NS_M, "#{action}ResponseMessage",
+          {ResponseClass: 'Success'}, (builder) ->
+            builder.nodeNS NS_M, 'ResponseCode', 'NoError'
+            resMsgCallback(builder)
 
   buildFolder: (builder, folder) ->
     builder.nodeNS NS_T, 'Folder', (builder) ->
@@ -35,4 +41,11 @@ class GetFolderResponse extends ResponseGenerator
     @buildAction 'GetFolder', (builder) =>
       @buildFolders(builder, folders)
 
-exports.GetFolderResponse = GetFolderResponse
+class CreateFolderResponse extends ResponseGenerator
+  generate: (folders) ->
+    @build (builder) =>
+      folders.forEach (folder) =>
+        @buildResponse builder, 'CreateFolder', (builder) =>
+          @buildFolders(builder, [folder])
+
+module.exports = {GetFolderResponse, CreateFolderResponse}

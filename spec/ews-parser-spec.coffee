@@ -20,6 +20,16 @@ class GetFolderRequest extends RequestConstructor
           for folderId in folderIds
             builder.nodeNS NS_T, 'DistinguishedFolderId', Id: folderId
 
+class CreateFolderRequest extends RequestConstructor
+  build: (displayName) ->
+    @_build (builder) ->
+      builder.nodeNS NS_M, 'CreateFolder', (builder) ->
+        builder.nodeNS NS_M, 'ParentFolderId', (builder) ->
+          builder.nodeNS NS_T, 'DistinguishedFolderId', 'inbox'
+        builder.nodeNS NS_M, 'Folders', (builder) ->
+          builder.nodeNS NS_T, 'Folder', (builder) ->
+            builder.nodeNS NS_T, 'DisplayName', displayName
+
 describe 'EWSParser', ->
   it 'GetFolderRequest test', (done) ->
     doc = new GetFolderRequest().build(['inbox'])
@@ -33,4 +43,15 @@ describe 'EWSParser', ->
       nameNode = folderNode.get('t:DisplayName', NS.NAMESPACES)
       nameNode.text().should.equal 'inbox'
     .then -> done()
+    .catch done
+
+  it 'CreateFolderRequest test', (done) ->
+    doc = new CreateFolderRequest().build('my-folder')
+    new EWSParser().parse doc.toString()
+    .then (resDoc) ->
+      path = '/soap:Envelope/soap:Body/*/m:ResponseMessages/*'
+      msgNode = resDoc.get(path, NS.NAMESPACES)
+      folderIdNode = msgNode.get('m:Folders/t:Folder/t:FolderId', NS.NAMESPACES)
+      folderIdNode.attr('Id').value().should.equal '3'
+      done()
     .catch done
