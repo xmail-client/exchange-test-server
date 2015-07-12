@@ -58,5 +58,6 @@ describe 'EWSParser', ->
       FolderChange.fetchAll()
     .then (collection) ->
       collection.length.should.equal 1
+      collection.at(0).getChanges().should.eql {"3": "create"}
       done()
     .catch done

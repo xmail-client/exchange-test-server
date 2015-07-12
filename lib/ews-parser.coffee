@@ -61,7 +61,7 @@ class RequestDOMParser
       newFolders = folders
       changes = {}
       changes[folder.id] = 'create' for folder in folders
-      new FolderChange(changes: changes).save()
+      new FolderChange(changes: JSON.stringify(changes)).save()
     .then =>
       @parseParentFolderId(parentNode)
     .then (parentFolder) ->
