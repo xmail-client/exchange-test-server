@@ -73,4 +73,9 @@ class RequestDOMParser
   parseDeleteFolder: (deleteFolderNode) ->
     folderIdsNode = deleteFolderNode.get('m:FolderIds', NAMESPACES)
     @parseFolderIds(folderIdsNode).then (folders) ->
-      Q.all (folder.destroy() for folder in folders when folder?)
+      changes = {}
+      promises = for folder in folders when folder?
+        changes[folder.id] = 'delete'
+        folder.destroy()
+      promises.push new FolderChange(changes: JSON.stringify(changes)).save()
+      Q.all promises

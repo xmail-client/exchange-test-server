@@ -3,6 +3,7 @@ Builder = require 'libxmljs-builder'
 NS = require '../lib/ews-ns'
 should = require 'should'
 [NS_T, NS_M] = [NS.NS_TYPES, NS.NS_MESSAGES]
+FolderChange = require '../lib/folder-change'
 
 class RequestConstructor
   _build: (bodyCallback) ->
@@ -65,7 +66,6 @@ describe 'EWSParser', ->
       folderIdNode = msgNode.get('m:Folders/t:Folder/t:FolderId', NS.NAMESPACES)
       folderIdNode.attr('Id').value().should.equal '3'
     .then ->
-      FolderChange = require '../lib/folder-change'
       FolderChange.fetchAll()
     .then (collection) ->
       collection.length.should.equal 1
@@ -81,5 +81,9 @@ describe 'EWSParser', ->
       new Folder(displayName: 'inbox').fetch()
     .then (folder) ->
       should.equal(folder, null)
+      FolderChange.fetchAll()
+    .then (collection) ->
+      collection.length.should.equal 1
+      collection.at(0).getChanges().should.eql {"2": "delete"}
       done()
     .catch done
