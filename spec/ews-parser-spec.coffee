@@ -70,6 +70,18 @@ class FindFolderRequest extends RequestConstructor
       builder.nodeNS NS_M, 'ParentFolderIds', (builder) =>
         @buildDistinguishFolderId(builder, parentName)
 
+class UpdateFolderRequest extends RequestConstructor
+  build: (folderId, newName) ->
+    @_buildAction 'UpdateFolder', (builder) =>
+      builder.nodeNS NS_M, 'FolderChanges', (builder) ->
+        builder.nodeNS NS_T, 'FolderChange', (builder) ->
+          builder.nodeNS NS_T, 'FolderId', 'Id': folderId
+          builder.nodeNS NS_T, 'Updates', (builder) ->
+            builder.nodeNS NS_T, 'SetFolderField', (builder) ->
+              builder.nodeNS NS_T, 'FieldURI', FieldURI: 'folder:DisplayName'
+              builder.nodeNS NS_T, 'Folder', (builder) ->
+                builder.nodeNS NS_T, 'DisplayName', newName
+
 describe 'EWSParser', ->
   it 'GetFolderRequest test', (done) ->
     doc = new GetFolderRequest().build(['inbox'])
@@ -128,7 +140,7 @@ describe 'EWSParser', ->
       done()
     .catch done
 
-  it.only 'MoveFolderRequest test', (done) ->
+  it 'MoveFolderRequest test', (done) ->
     doc = new MoveFolderRequest().build('msgfolderroot', 'inbox')
     new EWSParser().parse doc.toString()
     .then (resDoc) -> done()
@@ -141,5 +153,15 @@ describe 'EWSParser', ->
       path = '/soap:Envelope/soap:Body/*/*/*/m:Folders/t:Folder'
       folderNodes = resDoc.find(path, NS.NAMESPACES)
       folderNodes.length.should.equal 1
+      done()
+    .catch done
+
+  it.only 'UpdateFolderRequest test', (done) ->
+    doc = new UpdateFolderRequest().build(2, 'new-inbox')
+    new EWSParser().parse doc.toString()
+    .then (resDoc) ->
+      new Folder(id: 2).fetch()
+    .then (folder) ->
+      folder.get('displayName').should.equal 'new-inbox'
       done()
     .catch done

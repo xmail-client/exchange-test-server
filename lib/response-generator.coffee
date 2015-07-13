@@ -67,6 +67,11 @@ class FindFolderResponse extends ResponseGenerator
     @buildAction 'FindFolder', (builder) =>
       @buildFolders builder, folders
 
+class UpdateFolderResponse extends ResponseGenerator
+  generate: (folders) ->
+    @buildAction 'UpdateFolder', (builder) =>
+      @buildFolders builder, folders
+
 module.exports = {GetFolderResponse, CreateFolderResponse,
   DeleteFolderResponse, CopyFolderResponse, MoveFolderResponse,
-  FindFolderResponse}
+  FindFolderResponse, UpdateFolderResponse}

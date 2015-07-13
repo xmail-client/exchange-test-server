@@ -30,6 +30,9 @@ class RequestDOMParser
       when 'FindFolder'
         @parseFindFolder(actionNode).then (folders) ->
           new Response.FindFolderResponse().generate(folders)
+      when 'UpdateFolder'
+        @parseUpdateFolder(actionNode).then (folders) ->
+          new Response.UpdateFolderResponse().generate(folders)
 
   _parseFolderId: (parentNode) ->
     for folderIdNode in parentNode.childNodes()
@@ -138,3 +141,22 @@ class RequestDOMParser
       Folder.where(parentId: parentFolder.id).fetchAll()
     .then (collection) ->
       collection.at(i) for i in [0...collection.length]
+
+  getChanges = (changeNode) ->
+    fieldNodes = changeNode.find('t:Updates/t:SetFolderField', NAMESPACES)
+    for fieldNode in fieldNodes
+      fieldUriNode = fieldNode.get('t:FieldURI', NAMESPACES)
+      if fieldUriNode.attr('FieldURI').value() is 'folder:DisplayName'
+        text = fieldNode.get('t:Folder/t:DisplayName', NAMESPACES).text()
+        return {displayName: text}
+
+  parseUpdateFolder: (updateFolderNode) ->
+    changePath = 'm:FolderChanges/t:FolderChange'
+    changeNodes = updateFolderNode.find(changePath, NAMESPACES)
+    promises = for changeNode in changeNodes
+      folderIdNode = changeNode.get('t:FolderId', NAMESPACES)
+      new Folder(id: @_getIdFromNode(folderIdNode)).fetch().then (folder) ->
+        changes = getChanges(changeNode)
+        if changes and changes.displayName
+          folder.set('displayName', changes.displayName).save()
+    Q.all promises
