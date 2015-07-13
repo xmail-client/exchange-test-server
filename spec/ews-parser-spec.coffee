@@ -58,6 +58,12 @@ class CopyFolderRequest extends RequestConstructor
       @buildToFolderId(builder, parentName)
       @buildFolderIds builder, [newName]
 
+class FindFolderRequest extends RequestConstructor
+  build: (parentName) ->
+    @_buildAction 'FindFolder', (builder) =>
+      builder.nodeNS NS_M, 'ParentFolderIds', (builder) =>
+        @buildDistinguishFolderId(builder, parentName)
+
 describe 'EWSParser', ->
   it 'GetFolderRequest test', (done) ->
     doc = new GetFolderRequest().build(['inbox'])
@@ -113,5 +119,15 @@ describe 'EWSParser', ->
       new Folder(id: 3).fetch()
     .then (copyFolder) ->
       copyFolder.get('parentId').should.equal 2
+      done()
+    .catch done
+
+  it 'FindFolderRequest test', (done) ->
+    doc = new FindFolderRequest().build('msgfolderroot')
+    new EWSParser().parse doc.toString()
+    .then (resDoc) ->
+      path = '/soap:Envelope/soap:Body/*/*/*/m:Folders/t:Folder'
+      folderNodes = resDoc.find(path, NS.NAMESPACES)
+      folderNodes.length.should.equal 1
       done()
     .catch done
