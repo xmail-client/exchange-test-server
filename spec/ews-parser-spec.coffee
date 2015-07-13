@@ -17,9 +17,15 @@ class RequestConstructor
       builder.nodeNS NS_M, action, callback
 
   buildFolderIds: (builder, folderIds) ->
-    builder.nodeNS NS_M, 'FolderIds', (builder) ->
-      for folderId in folderIds
-        builder.nodeNS NS_T, 'DistinguishedFolderId', Id: folderId
+    builder.nodeNS NS_M, 'FolderIds', (builder) =>
+      @buildDistinguishFolderId(builder, folderId) for folderId in folderIds
+
+  buildDistinguishFolderId: (builder, folderId) ->
+    builder.nodeNS NS_T, 'DistinguishedFolderId', Id: folderId
+
+  buildParentFolderId: (builder, folderId) ->
+    builder.nodeNS NS_M, 'ParentFolderId', (builder) =>
+      @buildDistinguishFolderId(builder, folderId)
 
 class GetFolderRequest extends RequestConstructor
   build: (folderIds) ->
@@ -30,9 +36,8 @@ class GetFolderRequest extends RequestConstructor
 
 class CreateFolderRequest extends RequestConstructor
   build: (displayName) ->
-    @_buildAction 'CreateFolder', (builder) ->
-      builder.nodeNS NS_M, 'ParentFolderId', (builder) ->
-        builder.nodeNS NS_T, 'DistinguishedFolderId', 'inbox'
+    @_buildAction 'CreateFolder', (builder) =>
+      @buildParentFolderId(builder, displayName)
       builder.nodeNS NS_M, 'Folders', (builder) ->
         builder.nodeNS NS_T, 'Folder', (builder) ->
           builder.nodeNS NS_T, 'DisplayName', displayName

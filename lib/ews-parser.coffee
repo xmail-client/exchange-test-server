@@ -21,19 +21,28 @@ class RequestDOMParser
       when 'DeleteFolder'
         @parseDeleteFolder(actionNode).then ->
           new Response.DeleteFolderResponse().generate()
+      when 'CopyFolder'
+        @parseCopyFolder(actionNode).then ->
+          new Response.CopyFolderResponse().generate()
+
+  _parseFolderId: (parentNode) ->
+    for folderIdNode in parentNode.childNodes()
+      promise = @getFolderByFolderId(folderIdNode)
+      return promise if promise
 
   parseParentFolderId: (parentFolderIdNode) ->
-    @getFolderByFolderId parentFolderIdNode
+    console.log parentFolderIdNode.name()
+    @_parseFolderId parentFolderIdNode
 
-  parseFolderId: (folderIdNode) ->
+  _getIdFromNode: (folderIdNode) ->
     folderIdNode.attr('Id').value()
 
   getFolderByFolderId: (folderIdNode) ->
     if folderIdNode.name() is 'DistinguishedFolderId'
-      folderId = @parseFolderId(folderIdNode)
+      folderId = @_getIdFromNode(folderIdNode)
       new Folder(displayName: folderId).fetch()
     else if folderIdNode.name() is 'FolderId'
-      new Folder(id: @parseFolderId(folderIdNode)).fetch()
+      new Folder(id: @_getIdFromNode(folderIdNode)).fetch()
 
   parseFolderIds: (folderIdsNode) ->
     promises = []
@@ -79,3 +88,6 @@ class RequestDOMParser
         folder.destroy()
       promises.push new FolderChange(changes: JSON.stringify(changes)).save()
       Q.all promises
+
+  parseCopyFolder: (copyFolderNode) ->
+    toFolderIdNode = copyFolderNode.get('m:ToFolderId', NAMESPACES)
