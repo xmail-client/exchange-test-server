@@ -22,8 +22,8 @@ class RequestDOMParser
         @parseDeleteFolder(actionNode).then ->
           new Response.DeleteFolderResponse().generate()
       when 'CopyFolder'
-        @parseCopyFolder(actionNode).then ->
-          new Response.CopyFolderResponse().generate()
+        @parseCopyFolder(actionNode).then (folders) ->
+          new Response.CopyFolderResponse().generate(folders)
 
   _parseFolderId: (parentNode) ->
     for folderIdNode in parentNode.childNodes()
@@ -31,8 +31,10 @@ class RequestDOMParser
       return promise if promise
 
   parseParentFolderId: (parentFolderIdNode) ->
-    console.log parentFolderIdNode.name()
     @_parseFolderId parentFolderIdNode
+
+  parseToFolderId: (toFolderIdNode) ->
+    @_parseFolderId toFolderIdNode
 
   _getIdFromNode: (folderIdNode) ->
     folderIdNode.attr('Id').value()
@@ -77,7 +79,10 @@ class RequestDOMParser
     .then =>
       @parseParentFolderId(parentNode)
     .then (parentFolder) ->
-      folder.set('parent', parentFolder) for folder in newFolders
+      promises = for folder in newFolders
+        folder.set('parentId', parentFolder.id)
+        folder.save()
+      Q.all promises
 
   parseDeleteFolder: (deleteFolderNode) ->
     folderIdsNode = deleteFolderNode.get('m:FolderIds', NAMESPACES)
@@ -90,4 +95,18 @@ class RequestDOMParser
       Q.all promises
 
   parseCopyFolder: (copyFolderNode) ->
-    toFolderIdNode = copyFolderNode.get('m:ToFolderId', NAMESPACES)
+    folderIdsNode = copyFolderNode.get('m:FolderIds', NAMESPACES)
+    newFolders = null
+    @parseFolderIds(folderIdsNode).then (folders) ->
+      promises = for folder in folders
+        new Folder(displayName: folder.get('displayName')).save()
+      Q.all promises
+    .then (folders) =>
+      newFolders = folders
+      toFolderIdNode = copyFolderNode.get('m:ToFolderId', NAMESPACES)
+      @parseToFolderId(toFolderIdNode)
+    .then (toFolder) ->
+      promises = for folder in newFolders
+        folder.set('parentId', toFolder.id)
+        folder.save()
+      Q.all promises

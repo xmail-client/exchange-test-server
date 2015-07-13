@@ -4,6 +4,7 @@ NS = require '../lib/ews-ns'
 should = require 'should'
 [NS_T, NS_M] = [NS.NS_TYPES, NS.NS_MESSAGES]
 FolderChange = require '../lib/folder-change'
+Folder = require '../lib/folder'
 
 class RequestConstructor
   _build: (bodyCallback) ->
@@ -27,6 +28,10 @@ class RequestConstructor
     builder.nodeNS NS_M, 'ParentFolderId', (builder) =>
       @buildDistinguishFolderId(builder, folderId)
 
+  buildToFolderId: (builder, folderId) ->
+    builder.nodeNS NS_M, 'ToFolderId', (builder) =>
+      @buildDistinguishFolderId(builder, folderId)
+
 class GetFolderRequest extends RequestConstructor
   build: (folderIds) ->
     @_buildAction 'GetFolder', (builder) =>
@@ -46,6 +51,12 @@ class DeleteFolderRequest extends RequestConstructor
   build: (displayName) ->
     @_buildAction 'DeleteFolder', (builder) =>
       @buildFolderIds builder, [displayName]
+
+class CopyFolderRequest extends RequestConstructor
+  build: (parentName, newName) ->
+    @_buildAction 'CopyFolder', (builder) =>
+      @buildToFolderId(builder, parentName)
+      @buildFolderIds builder, [newName]
 
 describe 'EWSParser', ->
   it 'GetFolderRequest test', (done) ->
@@ -82,7 +93,6 @@ describe 'EWSParser', ->
     doc = new DeleteFolderRequest().build('inbox')
     new EWSParser().parse doc.toString()
     .then (resDoc) ->
-      Folder = require '../lib/folder'
       new Folder(displayName: 'inbox').fetch()
     .then (folder) ->
       should.equal(folder, null)
@@ -90,5 +100,18 @@ describe 'EWSParser', ->
     .then (collection) ->
       collection.length.should.equal 1
       collection.at(0).getChanges().should.eql {"2": "delete"}
+      done()
+    .catch done
+
+  it 'CopyFolderRequest test', (done) ->
+    doc = new CopyFolderRequest().build('inbox', 'msgfolderroot')
+    new EWSParser().parse doc.toString()
+    .then (resDoc) ->
+      path = '/soap:Envelope/soap:Body/*/*/*/m:Folders/*/t:FolderId'
+      folderIdNode = resDoc.get(path, NS.NAMESPACES)
+      folderIdNode.attr('Id').value().should.equal '3'
+      new Folder(id: 3).fetch()
+    .then (copyFolder) ->
+      copyFolder.get('parentId').should.equal 2
       done()
     .catch done
