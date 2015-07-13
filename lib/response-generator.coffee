@@ -72,6 +72,31 @@ class UpdateFolderResponse extends ResponseGenerator
     @buildAction 'UpdateFolder', (builder) =>
       @buildFolders builder, folders
 
+class SyncFolderHierarchyResponse extends ResponseGenerator
+  buildCreate: (builder, folder) ->
+    builder.nodeNS NS_T, 'Create', (builder) =>
+      @buildFolder(builder, folder)
+
+  buildUpdate: (builder, folder) ->
+    builder.nodeNS NS_T, 'Update', (builder) =>
+      @buildFolder(builder, folder)
+
+  buildDelete: (builder, folder) ->
+    builder.nodeNS NS_T, 'Delete', (builder) ->
+      builder.nodeNS NS_T, 'FolderId', {Id: folder.id}
+
+  generate: (res) ->
+    @buildAction 'SyncFolderHierarchy', (builder) =>
+      builder.nodeNS NS_M, 'SyncState', res.syncState.toString()
+      builder.nodeNS NS_M, 'IncludesLastFolderInRange', 'true'
+      builder.nodeNS NS_M, 'Changes', (builder) =>
+        if res.creates
+          @buildCreate(builder, createFolder) for createFolder in res.creates
+        if res.deletes
+          @buildDelete(builder, deleteFolder) for deleteFolder in res.deletes
+        if res.updates
+          @buildUpdate(builder, updateFolder) for updateFolder in res.updates
+
 module.exports = {GetFolderResponse, CreateFolderResponse,
   DeleteFolderResponse, CopyFolderResponse, MoveFolderResponse,
-  FindFolderResponse, UpdateFolderResponse}
+  FindFolderResponse, UpdateFolderResponse, SyncFolderHierarchyResponse}

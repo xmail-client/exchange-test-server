@@ -2,6 +2,7 @@ EWSParser = require '../lib/ews-parser'
 Builder = require 'libxmljs-builder'
 NS = require '../lib/ews-ns'
 should = require 'should'
+Q = require 'q'
 [NS_T, NS_M] = [NS.NS_TYPES, NS.NS_MESSAGES]
 FolderChange = require '../lib/folder-change'
 Folder = require '../lib/folder'
@@ -81,6 +82,11 @@ class UpdateFolderRequest extends RequestConstructor
               builder.nodeNS NS_T, 'FieldURI', FieldURI: 'folder:DisplayName'
               builder.nodeNS NS_T, 'Folder', (builder) ->
                 builder.nodeNS NS_T, 'DisplayName', newName
+
+class SyncFolderHierarchyRequest extends RequestConstructor
+  build: (syncState) ->
+    @_buildAction 'SyncFolderHierarchy', (builder) ->
+      builder.nodeNS NS_M, 'SyncState', syncState.toString() if syncState
 
 describe 'EWSParser', ->
   it 'GetFolderRequest test', (done) ->
@@ -163,5 +169,18 @@ describe 'EWSParser', ->
       new Folder(id: 2).fetch()
     .then (folder) ->
       folder.get('displayName').should.equal 'new-inbox'
+      done()
+    .catch done
+
+  createFolder = (name) ->
+    new EWSParser().parse new CreateFolderRequest().build(name)
+
+  it.only 'SyncFolderHierarchyRequest test', (done) ->
+    Q.all([createFolder('folder1'), createFolder('folder2')]).then ->
+      new EWSParser().parse new SyncFolderHierarchyRequest().build()
+    .then (resDoc) ->
+      path = '/soap:Envelope/soap:Body/*/*/*/m:Changes/t:Create'
+      createNodes = resDoc.find(path, NS.NAMESPACES)
+      createNodes.length.should.equal 2
       done()
     .catch done

@@ -8,7 +8,7 @@ Response = require './response-generator'
 module.exports =
 class RequestDOMParser
   parse: (body) ->
-    doc = libxml.parseXmlString body
+    doc = if typeof body is 'string' then libxml.parseXmlString(body) else body
     path = '/soap:Envelope/soap:Body/*'
     actionNode = doc.get(path, NAMESPACES)
     switch actionNode.name()
@@ -33,6 +33,9 @@ class RequestDOMParser
       when 'UpdateFolder'
         @parseUpdateFolder(actionNode).then (folders) ->
           new Response.UpdateFolderResponse().generate(folders)
+      when 'SyncFolderHierarchy'
+        @parseSyncFolderHierarchy(actionNode).then (res) ->
+          new Response.SyncFolderHierarchyResponse().generate(res)
 
   _parseFolderId: (parentNode) ->
     for folderIdNode in parentNode.childNodes()
@@ -171,3 +174,38 @@ class RequestDOMParser
         if changes and changes.displayName
           folder.set('displayName', changes.displayName).save()
     Q.all(promises).tap -> addUpdateChanges(updateFolders)
+
+  mergeChanges: (changeList) ->
+    changes = {}
+    for i in [0...changeList.length]
+      changeRow = changeList.at(i)
+      changeInfo = JSON.parse(changeRow.get('changes'))
+      for id, status of changeInfo
+        unless changes[id]
+          changes[id] = status
+        else
+          switch changes[id]
+            when 'create' then delete changes[id] if status is 'delete'
+            when 'update' then changes[id] = 'delete' if status is 'delete'
+    changes
+
+  transformChanges: (changes) ->
+    resChanges = {creates: [], updates: [], deletes: []}
+    promises = for id, status of changes
+      new Folder(id: parseInt(id)).fetch().then (folder) ->
+        resChanges["#{status}s"].push folder
+    Q.all(promises).then -> resChanges
+
+  parseSyncFolderHierarchy: (syncFolderNode) ->
+    syncStateNode = syncFolderNode.get('m:SyncState', NAMESPACES)
+    initId = if syncStateNode then parseInt(syncStateNode.text()) else 0
+    changeRows = null
+    FolderChange.where('id', '>', initId).fetchAll().then (changes) =>
+      changeRows = changes
+      @transformChanges @mergeChanges(changes)
+    .then (resChanges) ->
+      if changeRows.length <= 0
+        resChanges.syncState = initId
+      else
+        resChanges.syncState = changeRows.at(changeRows.length - 1).id
+      resChanges
