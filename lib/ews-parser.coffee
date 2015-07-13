@@ -18,6 +18,9 @@ class RequestDOMParser
       when 'CreateFolder'
         @parseCreateFolder(actionNode).then (folders) ->
           new Response.CreateFolderResponse().generate folders
+      when 'DeleteFolder'
+        @parseDeleteFolder(actionNode).then ->
+          new Response.DeleteFolderResponse().generate()
 
   parseParentFolderId: (parentFolderIdNode) ->
     @getFolderByFolderId parentFolderIdNode
@@ -66,3 +69,8 @@ class RequestDOMParser
       @parseParentFolderId(parentNode)
     .then (parentFolder) ->
       folder.set('parent', parentFolder) for folder in newFolders
+
+  parseDeleteFolder: (deleteFolderNode) ->
+    folderIdsNode = deleteFolderNode.get('m:FolderIds', NAMESPACES)
+    @parseFolderIds(folderIdsNode).then (folders) ->
+      Q.all (folder.destroy() for folder in folders when folder?)

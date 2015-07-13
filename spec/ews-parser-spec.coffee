@@ -1,6 +1,7 @@
 EWSParser = require '../lib/ews-parser'
 Builder = require 'libxmljs-builder'
 NS = require '../lib/ews-ns'
+should = require 'should'
 [NS_T, NS_M] = [NS.NS_TYPES, NS.NS_MESSAGES]
 
 class RequestConstructor
@@ -10,25 +11,35 @@ class RequestConstructor
     @builder.rootNS NS.NS_SOAP, 'Envelope', (builder) ->
       builder.nodeNS NS.NS_SOAP, 'Body', bodyCallback
 
+  _buildAction: (action, callback) ->
+    @_build (builder) ->
+      builder.nodeNS NS_M, action, callback
+
+  buildFolderIds: (builder, folderIds) ->
+    builder.nodeNS NS_M, 'FolderIds', (builder) ->
+      for folderId in folderIds
+        builder.nodeNS NS_T, 'DistinguishedFolderId', Id: folderId
+
 class GetFolderRequest extends RequestConstructor
   build: (folderIds) ->
-    @_build (builder) ->
-      builder.nodeNS NS_M, 'GetFolder', (builder) ->
-        builder.nodeNS NS_M, 'FolderShape', (builder) ->
-          builder.nodeNS NS_T, 'BaseShape', 'Default'
-        builder.nodeNS NS_M, 'FolderIds', (builder) ->
-          for folderId in folderIds
-            builder.nodeNS NS_T, 'DistinguishedFolderId', Id: folderId
+    @_buildAction 'GetFolder', (builder) =>
+      builder.nodeNS NS_M, 'FolderShape', (builder) ->
+        builder.nodeNS NS_T, 'BaseShape', 'Default'
+      @buildFolderIds(builder, folderIds)
 
 class CreateFolderRequest extends RequestConstructor
   build: (displayName) ->
-    @_build (builder) ->
-      builder.nodeNS NS_M, 'CreateFolder', (builder) ->
-        builder.nodeNS NS_M, 'ParentFolderId', (builder) ->
-          builder.nodeNS NS_T, 'DistinguishedFolderId', 'inbox'
-        builder.nodeNS NS_M, 'Folders', (builder) ->
-          builder.nodeNS NS_T, 'Folder', (builder) ->
-            builder.nodeNS NS_T, 'DisplayName', displayName
+    @_buildAction 'CreateFolder', (builder) ->
+      builder.nodeNS NS_M, 'ParentFolderId', (builder) ->
+        builder.nodeNS NS_T, 'DistinguishedFolderId', 'inbox'
+      builder.nodeNS NS_M, 'Folders', (builder) ->
+        builder.nodeNS NS_T, 'Folder', (builder) ->
+          builder.nodeNS NS_T, 'DisplayName', displayName
+
+class DeleteFolderRequest extends RequestConstructor
+  build: (displayName) ->
+    @_buildAction 'DeleteFolder', (builder) =>
+      @buildFolderIds builder, [displayName]
 
 describe 'EWSParser', ->
   it 'GetFolderRequest test', (done) ->
@@ -59,5 +70,16 @@ describe 'EWSParser', ->
     .then (collection) ->
       collection.length.should.equal 1
       collection.at(0).getChanges().should.eql {"3": "create"}
+      done()
+    .catch done
+
+  it 'DeleteFolderRequest test', (done) ->
+    doc = new DeleteFolderRequest().build('inbox')
+    new EWSParser().parse doc.toString()
+    .then (resDoc) ->
+      Folder = require '../lib/folder'
+      new Folder(displayName: 'inbox').fetch()
+    .then (folder) ->
+      should.equal(folder, null)
       done()
     .catch done

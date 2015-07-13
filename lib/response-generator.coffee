@@ -48,4 +48,9 @@ class CreateFolderResponse extends ResponseGenerator
         @buildResponse builder, 'CreateFolder', (builder) =>
           @buildFolders(builder, [folder])
 
-module.exports = {GetFolderResponse, CreateFolderResponse}
+class DeleteFolderResponse extends ResponseGenerator
+  generate: ->
+    @buildAction 'DeleteFolder', ->
+
+module.exports = {GetFolderResponse, CreateFolderResponse,
+  DeleteFolderResponse}
