@@ -76,22 +76,29 @@ class RequestDOMParser
     folderIdsNode = getFolderNode.get('m:FolderIds', NAMESPACES)
     @parseFolderIds(folderIdsNode)
 
+  addChanges = (action, folders) ->
+    changes = {}
+    changes[folder.id] = action for folder in folders
+    new FolderChange(changes: JSON.stringify(changes)).save()
+
+  addCreateChanges = (folders) -> addChanges('create', folders)
+
+  addDeleteChanges = (folders) -> addChanges('delete', folders)
+
+  addUpdateChanges = (folders) -> addChanges('update', folders)
+
   parseCreateFolder: (createFolderNode) ->
     parentNode = createFolderNode.get('m:ParentFolderId', NAMESPACES)
     foldersNode = createFolderNode.get('m:Folders', NAMESPACES)
     newFolders = null
-    @parseFolders(foldersNode).then (folders) ->
+    @parseFolders(foldersNode).then (folders) =>
       newFolders = folders
-      changes = {}
-      changes[folder.id] = 'create' for folder in folders
-      new FolderChange(changes: JSON.stringify(changes)).save()
-    .then =>
       @parseParentFolderId(parentNode)
     .then (parentFolder) ->
       promises = for folder in newFolders
         folder.set('parentId', parentFolder.id)
         folder.save()
-      Q.all promises
+      Q.all(promises).tap -> addCreateChanges(newFolders)
 
   parseDeleteFolder: (deleteFolderNode) ->
     folderIdsNode = deleteFolderNode.get('m:FolderIds', NAMESPACES)
@@ -118,19 +125,21 @@ class RequestDOMParser
       promises = for folder in newFolders
         folder.set('parentId', toFolder.id)
         folder.save()
-      Q.all promises
+      Q.all(promises).tap -> addCreateChanges(newFolders)
 
   parseMoveFolder: (moveFolderNode) ->
     folderIdsNode = moveFolderNode.get('m:FolderIds', NAMESPACES)
     moveFolders = null
-    @parseFolderIds(folderIdsNode).then (folders) =>
+    @parseFolderIds(folderIdsNode).then (folders) ->
       moveFolders = folders
+      addDeleteChanges(folders)
+    .then =>
       toFolderIdNode = moveFolderNode.get('m:ToFolderId', NAMESPACES)
       @parseToFolderId(toFolderIdNode)
     .then (toFolder) ->
       promises = for folder in moveFolders
         folder.set('parentId', toFolder.id).save()
-      Q.all promises
+      Q.all(promises).tap -> addCreateChanges(moveFolders)
 
   parseFindFolder: (findFolderNode) ->
     parentFolderIdsNode = findFolderNode.get('m:ParentFolderIds', NAMESPACES)
@@ -153,10 +162,12 @@ class RequestDOMParser
   parseUpdateFolder: (updateFolderNode) ->
     changePath = 'm:FolderChanges/t:FolderChange'
     changeNodes = updateFolderNode.find(changePath, NAMESPACES)
+    updateFolders = []
     promises = for changeNode in changeNodes
       folderIdNode = changeNode.get('t:FolderId', NAMESPACES)
       new Folder(id: @_getIdFromNode(folderIdNode)).fetch().then (folder) ->
         changes = getChanges(changeNode)
+        updateFolders.push folder
         if changes and changes.displayName
           folder.set('displayName', changes.displayName).save()
-    Q.all promises
+    Q.all(promises).tap -> addUpdateChanges(updateFolders)

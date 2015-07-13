@@ -156,7 +156,7 @@ describe 'EWSParser', ->
       done()
     .catch done
 
-  it.only 'UpdateFolderRequest test', (done) ->
+  it 'UpdateFolderRequest test', (done) ->
     doc = new UpdateFolderRequest().build(2, 'new-inbox')
     new EWSParser().parse doc.toString()
     .then (resDoc) ->
