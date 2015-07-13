@@ -1,7 +1,7 @@
 {
   "name": "exchange-test-server",
   "description": "The test server that implement the EWS API",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "homepage": "https://github.com/liuxiong332/exchange-test-server",
   "bugs": "https://github.com/liuxiong332/exchange-test-server/issues",
   "license": "MIT",
