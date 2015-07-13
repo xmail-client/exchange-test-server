@@ -1,23 +1,23 @@
 {
   "name": "exchange-test-server",
   "description": "The test server that implement the EWS API",
-  "version": "0.1.0",
-  "homepage": "https://github.com/liuxiong332/exchange-test-server",
-  "bugs": "https://github.com/liuxiong332/exchange-test-server/issues",
+  "version": "0.1.1",
+  "homepage": "https://github.com/xmail-client/exchange-test-server",
+  "bugs": "https://github.com/xmail-client/exchange-test-server/issues",
   "license": "MIT",
-  "main": "dist/exchange-test-server.js",
+  "main": "dist/server.js",
   "author": {
     "name": "liuxiong",
     "email": "liuxiong332@163.com"
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/liuxiong332/exchange-test-server"
+    "url": "https://github.com/xmail-client/exchange-test-server"
   },
   "files": [
     "dist"
   ],
-  "keywords": [],
+  "keywords": ["exchange", "server", "test"],
   "dependencies": {
     "bookshelf": "^0.8.1",
     "debug": "2.2.0",
@@ -30,15 +30,16 @@
     "sqlite3": "^3.0.8"
   },
   "devDependencies": {
-    "gulp": "^3.8.8",
-    "gulp-coffeelint": "^0.4.0",
-    "gulp-mocha": "^1.1.0",
-    "coveralls": "^2.11.1",
-    "should": "^4.0.4",
-    "gulp-coffee": "^2.3.1",
-    "gulp-load-plugins": "^0.6.0",
-    "gulp-plumber": "^0.6.5",
     "coffee-script": "^1.9.1",
+    "coveralls": "^2.11.1",
+    "del": "^1.2.0",
+    "gulp": "^3.8.8",
+    "gulp-coffee": "^2.3.1",
+    "gulp-coffeelint": "^0.4.0",
+    "gulp-load-plugins": "^0.6.0",
+    "gulp-mocha": "^1.1.0",
+    "gulp-plumber": "^0.6.5",
+    "should": "^4.0.4",
     "sinon": "^1.14.1"
   },
   "scripts": {

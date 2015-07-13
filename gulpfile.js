@@ -1,6 +1,7 @@
 'use strict';
 
 var gulp   = require('gulp');
+var del = require('del');
 var plugins = require('gulp-load-plugins')();
 var CI = process.env.CI === 'true';
 
@@ -37,7 +38,11 @@ gulp.task('watch', ['test'], function () {
 
 gulp.task('test', ['lint', 'unitTest']);
 
-gulp.task('dist', function () {
+gulp.task('clean', function (cb) {
+  del(['dist/**'], cb);
+});
+
+gulp.task('dist', ['clean'], function () {
   return gulp.src(paths.coffee, {base: './lib'})
     .pipe(plugins.coffee({bare: true}))
     .pipe(gulp.dest('./dist'));
