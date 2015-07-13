@@ -24,6 +24,9 @@ class RequestDOMParser
       when 'CopyFolder'
         @parseCopyFolder(actionNode).then (folders) ->
           new Response.CopyFolderResponse().generate(folders)
+      when 'MoveFolder'
+        @parseMoveFolder(actionNode).then (folders) ->
+          new Response.MoveFolderResponse().generate(folders)
       when 'FindFolder'
         @parseFindFolder(actionNode).then (folders) ->
           new Response.FindFolderResponse().generate(folders)
@@ -112,6 +115,18 @@ class RequestDOMParser
       promises = for folder in newFolders
         folder.set('parentId', toFolder.id)
         folder.save()
+      Q.all promises
+
+  parseMoveFolder: (moveFolderNode) ->
+    folderIdsNode = moveFolderNode.get('m:FolderIds', NAMESPACES)
+    moveFolders = null
+    @parseFolderIds(folderIdsNode).then (folders) =>
+      moveFolders = folders
+      toFolderIdNode = moveFolderNode.get('m:ToFolderId', NAMESPACES)
+      @parseToFolderId(toFolderIdNode)
+    .then (toFolder) ->
+      promises = for folder in moveFolders
+        folder.set('parentId', toFolder.id).save()
       Q.all promises
 
   parseFindFolder: (findFolderNode) ->

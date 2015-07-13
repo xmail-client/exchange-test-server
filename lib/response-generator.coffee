@@ -57,10 +57,16 @@ class CopyFolderResponse extends ResponseGenerator
     @buildAction 'CopyFolder', (builder) =>
       @buildFolders builder, folders
 
+class MoveFolderResponse extends ResponseGenerator
+  generate: (folders) ->
+    @buildAction 'MoveFolder', (builder) =>
+      @buildFolders builder, folders
+
 class FindFolderResponse extends ResponseGenerator
   generate: (folders) ->
     @buildAction 'FindFolder', (builder) =>
       @buildFolders builder, folders
 
 module.exports = {GetFolderResponse, CreateFolderResponse,
-  DeleteFolderResponse, CopyFolderResponse, FindFolderResponse}
+  DeleteFolderResponse, CopyFolderResponse, MoveFolderResponse,
+  FindFolderResponse}

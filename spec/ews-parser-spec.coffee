@@ -58,6 +58,12 @@ class CopyFolderRequest extends RequestConstructor
       @buildToFolderId(builder, parentName)
       @buildFolderIds builder, [newName]
 
+class MoveFolderRequest extends RequestConstructor
+  build: (parentName, moveName) ->
+    @_buildAction 'MoveFolder', (builder) =>
+      @buildToFolderId(builder, parentName)
+      @buildFolderIds builder, [moveName]
+
 class FindFolderRequest extends RequestConstructor
   build: (parentName) ->
     @_buildAction 'FindFolder', (builder) =>
@@ -120,6 +126,12 @@ describe 'EWSParser', ->
     .then (copyFolder) ->
       copyFolder.get('parentId').should.equal 2
       done()
+    .catch done
+
+  it.only 'MoveFolderRequest test', (done) ->
+    doc = new MoveFolderRequest().build('msgfolderroot', 'inbox')
+    new EWSParser().parse doc.toString()
+    .then (resDoc) -> done()
     .catch done
 
   it 'FindFolderRequest test', (done) ->
