@@ -7,10 +7,10 @@ class DBInfo
   constructor: (dbPath) ->
     dbPath ?= path.resolve __dirname, '../data/db.sqlite'
     this.knex = knex {client: 'sqlite3', connection: {filename: dbPath}}
-    this.bookshelf = require('bookshelf')(knex)
+    this.bookshelf = require('bookshelf')(this.knex)
 
   createTables: ->
-    Q.all [@createFolder(), @createFolderChange()]
+    Q.all [@_createFolder(), @_createFolderChange()]
 
   destroyTables: ->
     Q.all [
@@ -19,19 +19,19 @@ class DBInfo
     ]
 
   close: (callback) ->
-    knex.destroy callback
-    
+    @knex.destroy callback
+
   _createTableIfNotExists: (tableName, callback) ->
     @knex.schema.hasTable(tableName).then (exists) =>
       @knex.schema.createTable(tableName, callback) unless exists
 
   _createFolder: ->
-    @createTableIfNotExists 'folders', (table) ->
+    @_createTableIfNotExists 'folders', (table) ->
       table.increments('id')
       table.integer('parentId').references('folders.id')
       table.string('displayName')
 
   _createFolderChange: ->
-    @createTableIfNotExists 'folderChanges', (table) ->
+    @_createTableIfNotExists 'folderChanges', (table) ->
       table.increments('id')
       table.json('changes')

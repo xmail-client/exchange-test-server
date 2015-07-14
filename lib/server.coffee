@@ -8,7 +8,7 @@
 express = require 'express'
 bodyParser = require 'body-parser'
 Q = require 'q'
-DBInfo = require('./bookshelf')
+DBInfo = require('./db-info')
 Models = require './models'
 
 module.exports =
