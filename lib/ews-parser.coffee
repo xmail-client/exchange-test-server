@@ -1,12 +1,12 @@
 Q = require 'q'
 {NAMESPACES} = require './ews-ns'
 libxml = require 'libxmljs'
-Folder = require './folder'
-FolderChange = require './folder-change'
 Response = require './response-generator'
 
 module.exports =
 class RequestDOMParser
+  constructor: (@models) ->
+
   parse: (body) ->
     doc = if typeof body is 'string' then libxml.parseXmlString(body) else body
     path = '/soap:Envelope/soap:Body/*'
@@ -54,9 +54,9 @@ class RequestDOMParser
   getFolderByFolderId: (folderIdNode) ->
     if folderIdNode.name() is 'DistinguishedFolderId'
       folderId = @_getIdFromNode(folderIdNode)
-      new Folder(displayName: folderId).fetch()
+      new @models.Folder(displayName: folderId).fetch()
     else if folderIdNode.name() is 'FolderId'
-      new Folder(id: @_getIdFromNode(folderIdNode)).fetch()
+      new @models.Folder(id: @_getIdFromNode(folderIdNode)).fetch()
 
   parseFolderIds: (folderIdsNode) ->
     promises = []
@@ -67,7 +67,7 @@ class RequestDOMParser
 
   parseFolder: (folderNode) ->
     displayName = folderNode.get('t:DisplayName', NAMESPACES).text()
-    new Folder(displayName: displayName).save()
+    new @models.Folder(displayName: displayName).save()
 
   parseFolders: (foldersNode) ->
     folderNodes = foldersNode.find('t:Folder', NAMESPACES)
@@ -82,7 +82,7 @@ class RequestDOMParser
   addChanges = (action, folders) ->
     changes = {}
     changes[folder.id] = action for folder in folders
-    new FolderChange(changes: JSON.stringify(changes)).save()
+    new @models.FolderChange(changes: JSON.stringify(changes)).save()
 
   addCreateChanges = (folders) -> addChanges('create', folders)
 
@@ -110,15 +110,15 @@ class RequestDOMParser
       promises = for folder in folders when folder?
         changes[folder.id] = 'delete'
         folder.destroy()
-      promises.push new FolderChange(changes: JSON.stringify(changes)).save()
+      promises.push new @models.FolderChange(changes: JSON.stringify(changes)).save()
       Q.all promises
 
   parseCopyFolder: (copyFolderNode) ->
     folderIdsNode = copyFolderNode.get('m:FolderIds', NAMESPACES)
     newFolders = null
-    @parseFolderIds(folderIdsNode).then (folders) ->
+    @parseFolderIds(folderIdsNode).then (folders) =>
       promises = for folder in folders
-        new Folder(displayName: folder.get('displayName')).save()
+        new @models.Folder(displayName: folder.get('displayName')).save()
       Q.all promises
     .then (folders) =>
       newFolders = folders
@@ -147,10 +147,10 @@ class RequestDOMParser
   parseFindFolder: (findFolderNode) ->
     parentFolderIdsNode = findFolderNode.get('m:ParentFolderIds', NAMESPACES)
     @parseParentFolderId(parentFolderIdsNode)
-    .then (parentFolder) ->
-      if parentFolder then parentFolder else new Folder(id: 1).fetch()
-    .then (parentFolder) ->
-      Folder.where(parentId: parentFolder.id).fetchAll()
+    .then (parentFolder) =>
+      if parentFolder then parentFolder else new @models.Folder(id: 1).fetch()
+    .then (parentFolder) =>
+      @models.Folder.where(parentId: parentFolder.id).fetchAll()
     .then (collection) ->
       collection.at(i) for i in [0...collection.length]
 
@@ -168,7 +168,8 @@ class RequestDOMParser
     updateFolders = []
     promises = for changeNode in changeNodes
       folderIdNode = changeNode.get('t:FolderId', NAMESPACES)
-      new Folder(id: @_getIdFromNode(folderIdNode)).fetch().then (folder) ->
+      new @models.Folder(id: @_getIdFromNode(folderIdNode)).fetch()
+      .then (folder) ->
         changes = getChanges(changeNode)
         updateFolders.push folder
         if changes and changes.displayName
@@ -192,7 +193,7 @@ class RequestDOMParser
   transformChanges: (changes) ->
     resChanges = {creates: [], updates: [], deletes: []}
     promises = for id, status of changes
-      new Folder(id: parseInt(id)).fetch().then (folder) ->
+      new @models.Folder(id: parseInt(id)).fetch().then (folder) ->
         resChanges["#{status}s"].push folder
     Q.all(promises).then -> resChanges
 
@@ -200,7 +201,7 @@ class RequestDOMParser
     syncStateNode = syncFolderNode.get('m:SyncState', NAMESPACES)
     initId = if syncStateNode then parseInt(syncStateNode.text()) else 0
     changeRows = null
-    FolderChange.where('id', '>', initId).fetchAll().then (changes) =>
+    @models.FolderChange.where('id', '>', initId).fetchAll().then (changes) =>
       changeRows = changes
       @transformChanges @mergeChanges(changes)
     .then (resChanges) ->

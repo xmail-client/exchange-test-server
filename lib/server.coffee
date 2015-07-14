@@ -5,9 +5,11 @@
  Copyright (c) 2015 liuxiong
  Licensed under the MIT license.
 ###
-EWSParser = require './ews-parser'
 express = require 'express'
 bodyParser = require 'body-parser'
+Q = require 'q'
+DBInfo = require('./bookshelf')
+Models = require './models'
 
 module.exports =
 class Server
@@ -16,17 +18,22 @@ class Server
       callback = config
       config = {}
 
-    if config.dbPath
-      require('./bookshelf').initKnex(config.dbPath)
+    this.dbInfo = new DBInfo(config.dbPath)
 
     app = express('/')
     app.use(bodyParser.text(type: '*/*'))
-    app.post '/EWS/Exchange.asmx', (req, res) ->
-      new EWSParser().parse(req.body).then (resDoc) ->
+    app.post '/EWS/Exchange.asmx', (req, res) =>
+      EWSParser = require './ews-parser'
+      new EWSParser(@models).parse(req.body).then (resDoc) ->
         res.set('Content-Type', 'text/xml')
         res.send resDoc.toString()
 
-    @server = app.listen config.port ? 3000, callback
+    this.dbInfo.createTables().then =>
+      @models = new Models(@dbInfo.bookshelf)
+      @models.init()
+    .then =>
+      @server = app.listen config.port ? 3000, callback
 
   close: (callback) ->
-    @server.close(callback) if @server
+    @dbInfo.close =>
+      @server.close(callback) if @server

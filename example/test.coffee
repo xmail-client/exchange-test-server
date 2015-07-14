@@ -1,30 +1,4 @@
-# exchange-test-server
-[![NPM version][npm-image]][npm-url] [![Build Status][travis-image]][travis-url] [![Dependency Status][daviddm-image]][daviddm-url] [![Coverage Status][coveralls-image]][coveralls-url]
-
-The test server that implement the EWS API
-
-
-## Install
-
-```bash
-$ npm install --save exchange-test-server
-```
-
-
-## Usage
-
-### start the test server
-
-```coffee
-server = new Server()
-server.start {port: 3000}, ->
-  console.log 'server listen on localhost:3000'
-```
-
-### start the test server and send the SOAP request
-```coffee
 Server = require 'exchange-test-server'
-Request = require './request-helper'
 Builder = require 'libxmljs-builder'
 http = require 'http'
 NS =
@@ -64,8 +38,11 @@ class GetFolderRequest extends RequestConstructor
         builder.nodeNS NS_T, 'BaseShape', 'Default'
       @buildFolderIds(builder, folderIds)
 
+dbPath = require('path').resolve(__dirname, 'data/db.sqlite')
 server = new Server()
-server.start ->
+server.start dbPath: dbPath, ->
+  console.log 'server start'
+  
   config =
     port: 3000, method: 'POST', path: '/EWS/Exchange.asmx'
     headers:
@@ -75,30 +52,3 @@ server.start ->
     console.log 'Done'
     server.close()
   req.end new GetFolderRequest().build('inbox').toString()
-
-```
-
-## API
-
-_(Coming soon)_
-
-
-## Contributing
-
-In lieu of a formal styleguide, take care to maintain the existing coding style. Add unit tests for any new or changed functionality. Lint and test your code using [gulp](http://gulpjs.com/).
-
-
-## License
-
-Copyright (c) 2015 liuxiong. Licensed under the MIT license.
-
-
-
-[npm-url]: https://npmjs.org/package/exchange-test-server
-[npm-image]: https://badge.fury.io/js/exchange-test-server.svg
-[travis-url]: https://travis-ci.org/liuxiong332/exchange-test-server
-[travis-image]: https://travis-ci.org/liuxiong332/exchange-test-server.svg?branch=master
-[daviddm-url]: https://david-dm.org/liuxiong332/exchange-test-server
-[daviddm-image]: https://david-dm.org/liuxiong332/exchange-test-server.svg?theme=shields.io
-[coveralls-url]: https://coveralls.io/r/liuxiong332/exchange-test-server
-[coveralls-image]: https://coveralls.io/repos/liuxiong332/exchange-test-server/badge.png
