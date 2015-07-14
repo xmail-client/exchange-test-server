@@ -9,7 +9,7 @@
   "author": "liuxiong332",
   "license": "ISC",
   "dependencies": {
-    "exchange-test-server": "^0.1.1",
+    "exchange-test-server": "^0.1.2",
     "libxmljs-builder": "^0.3.0"
   }
 }
