@@ -42,11 +42,10 @@ dbPath = require('path').resolve(__dirname, 'data/db.sqlite')
 server = new Server()
 server.start dbPath: dbPath, ->
   console.log 'server start'
-  
+
   config =
     port: 3000, method: 'POST', path: '/EWS/Exchange.asmx'
-    headers:
-      'Content-Type': 'text/xml'
+    headers: 'Content-Type': 'text/xml'
 
   req = http.request config, (res) ->
     console.log 'Done'
