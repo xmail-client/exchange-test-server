@@ -17,8 +17,13 @@
   "files": [
     "dist"
   ],
-  "keywords": ["exchange", "server", "test"],
+  "keywords": [
+    "exchange",
+    "server",
+    "test"
+  ],
   "dependencies": {
+    "body-parser": "^1.13.2",
     "bookshelf": "^0.8.1",
     "debug": "2.2.0",
     "express": "^4.13.1",
