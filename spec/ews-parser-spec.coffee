@@ -175,7 +175,7 @@ describe 'EWSParser', ->
   createFolder = (name) ->
     new EWSParser().parse new CreateFolderRequest().build(name)
 
-  it.only 'SyncFolderHierarchyRequest test', (done) ->
+  it 'SyncFolderHierarchyRequest test', (done) ->
     Q.all([createFolder('folder1'), createFolder('folder2')]).then ->
       new EWSParser().parse new SyncFolderHierarchyRequest().build()
     .then (resDoc) ->
