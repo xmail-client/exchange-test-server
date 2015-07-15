@@ -30,6 +30,7 @@ class ResponseGenerator
     builder.nodeNS NS_T, 'Folder', (builder) ->
       builder.nodeNS NS_T, 'FolderId', {Id: folder.id}
       builder.nodeNS NS_T, 'DisplayName', folder.get('displayName')
+      builder.nodeNS NS_T, 'ParentFolderId', folder.get('parentId')
 
   buildFolders: (builder, folders) ->
     builder.nodeNS NS_M, 'Folders', (builder) =>
@@ -65,7 +66,13 @@ class MoveFolderResponse extends ResponseGenerator
 class FindFolderResponse extends ResponseGenerator
   generate: (folders) ->
     @buildAction 'FindFolder', (builder) =>
-      @buildFolders builder, folders
+      params =
+        'TotalItemsInView': folders.length
+        'IncludesLastItemInRange': true
+      builder.nodeNS NS_M, 'RootFolder', params, (builder) =>
+        builder.nodeNS NS_T, 'Folders', (builder) =>
+          for folder in folders
+            @buildFolder(builder, folder)
 
 class UpdateFolderResponse extends ResponseGenerator
   generate: (folders) ->

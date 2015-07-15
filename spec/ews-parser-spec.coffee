@@ -86,7 +86,7 @@ describe 'EWSParser', ->
     doc = new Request.FindFolderRequest().build('msgfolderroot')
     new EWSParser(models).parse doc.toString()
     .then (resDoc) ->
-      path = '/soap:Envelope/soap:Body/*/*/*/m:Folders/t:Folder'
+      path = '/soap:Envelope/soap:Body/*/*/*/m:RootFolder/t:Folders/t:Folder'
       folderNodes = resDoc.find(path, NS.NAMESPACES)
       folderNodes.length.should.equal 1
       done()
