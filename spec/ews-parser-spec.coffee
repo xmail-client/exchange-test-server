@@ -35,17 +35,21 @@ describe 'EWSParser', ->
 
   it 'CreateFolderRequest test', (done) ->
     doc = new Request.CreateFolderRequest().build('my-folder')
+    newFolder = null
     new EWSParser(models).parse doc.toString()
+    .tap ->
+      new models.Folder(displayName: 'my-folder').fetch().then (myFolder) ->
+        newFolder = myFolder
     .then (resDoc) ->
       path = '/soap:Envelope/soap:Body/*/m:ResponseMessages/*'
       msgNode = resDoc.get(path, NS.NAMESPACES)
       folderIdNode = msgNode.get('m:Folders/t:Folder/t:FolderId', NS.NAMESPACES)
-      folderIdNode.attr('Id').value().should.equal '3'
+      folderIdNode.attr('Id').value().should.equal newFolder.id.toString()
     .then ->
       models.FolderChange.fetchAll()
     .then (collection) ->
       collection.length.should.equal 1
-      collection.at(0).getChanges().should.eql {"3": "create"}
+      collection.at(0).getChanges().should.eql {"#{newFolder.id}": "create"}
       done()
     .catch done
 
@@ -69,8 +73,8 @@ describe 'EWSParser', ->
     .then (resDoc) ->
       path = '/soap:Envelope/soap:Body/*/*/*/m:Folders/*/t:FolderId'
       folderIdNode = resDoc.get(path, NS.NAMESPACES)
-      folderIdNode.attr('Id').value().should.equal '3'
-      new models.Folder(id: 3).fetch()
+      newFolderId = parseInt folderIdNode.attr('Id').value()
+      new models.Folder(id: newFolderId).fetch()
     .then (copyFolder) ->
       copyFolder.get('parentId').should.equal 2
       done()
@@ -88,7 +92,7 @@ describe 'EWSParser', ->
     .then (resDoc) ->
       path = '/soap:Envelope/soap:Body/*/*/*/m:RootFolder/t:Folders/t:Folder'
       folderNodes = resDoc.find(path, NS.NAMESPACES)
-      folderNodes.length.should.equal 1
+      folderNodes.length.should.equal models.Folder.builtInFolders.length
       done()
     .catch done
 

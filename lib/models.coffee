@@ -1,3 +1,4 @@
+Q = require 'q'
 
 module.exports =
 class Models
@@ -10,9 +11,13 @@ class Models
       parent: ->
         this.belongsTo Folder, 'parentId'
 
+    Folder.builtInFolders = [
+      'inbox', 'drafts', 'sentitems', 'deleteditems', 'junkemail']
     Folder.insertRootInboxFolder = ->
       new Folder(displayName: 'msgfolderroot').save().then (rootFolder) ->
-        new Folder(displayName: 'inbox', parentId: rootFolder.id).save()
+        promises = for name in Folder.builtInFolders
+          new Folder(displayName: name, parentId: rootFolder.id).save()
+        Q.all promises
 
     @Folder = Folder
 
