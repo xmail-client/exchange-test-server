@@ -26,7 +26,7 @@ class Server
       EWSParser = require './ews-parser'
       new EWSParser(@models).parse(req.body).then (resDoc) ->
         res.set('Content-Type', 'text/xml')
-        res.send resDoc.toString()
+        res.send resDoc.toString(false)
 
     this.dbInfo.createTables().then =>
       @models = new Models(@dbInfo.bookshelf)
